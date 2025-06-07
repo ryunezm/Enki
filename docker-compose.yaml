@@ -1,35 +1,46 @@
 version: '3.9'
 
 services:
-enki-backend:
-    image: 'enki-backend:latest'
+  backend:
+    image: enki-backend:latest
     build: ./backend
     container_name: enki-backend
     ports:
       - '8080:8080'
     environment:
-      SPRING_DATA_POSTGRESQL_URL: 'jdbc:postgresql://postgres:5432/mydatabase'
-      SPRING_DATA_POSTGRESQL_USERNAME: 'myuser'
-      SPRING_DATA_POSTGRESQL_PASSWORD: 'secret'
-      SPRING_JPA_HIBERNATE_DDL_AUTO: 'update'
+      SPRING_DATASOURCE_URL: jdbc:postgresql://enki-postgres:5432/my_database
+      SPRING_DATASOURCE_USERNAME: my_user
+      SPRING_DATASOURCE_PASSWORD: secret
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
     depends_on:
       - enki-postgres
     networks:
       - enki-net
 
-enki-frontend:
-  build: ./frontend
-  container_name: enki-frontend
-  ports: '5432:5432'
-  networks: enki-net
-  environment:
-    postgres_db: mydatabase
-    postgres_user: myuser
-    postgres_password: secret
-  volumes:
-    - pgdata: /var/lib/postgresql/data
-  
-enki-networks:
-  - enki-net
+  frontend:
+    build: ./frontend
+    container_name: enki-frontend
+    ports:
+      - '4200:80'
+    networks:
+      - enki-net
+
+  enki-postgres:
+    image: postgres:latest
+    container_name: enki-postgres
+    environment:
+      POSTGRES_DB: my_database
+      POSTGRES_USER: my_user
+      POSTGRES_PASSWORD: secret
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+    networks:
+      - enki-net
+
+networks:
+  enki-net:
+
 volumes:
   pgdata:
