@@ -1,0 +1,26 @@
+# === Global ===
+*.log
+*.swp
+.DS_Store
+.env
+.vscode/
+.idea/
+
+# === Java / Spring Boot ===
+backend/target/
+backend/.mvn/
+backend/.classpath
+backend/.project
+backend/.settings/
+backend/*.iml
+
+# === Node / Angular ===
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/*.iml
+
+# === Docker ===
+**/pgdata/
+**/tmp/
+**/*.pid
