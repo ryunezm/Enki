@@ -2,7 +2,7 @@ package com.ryunezm.enki.controllers;
 
 import com.ryunezm.enki.dto.AuthRequest;
 import com.ryunezm.enki.dto.AuthResponse;
-import com.ryunezm.enki.services.JwtService;
+import com.ryunezm.enki.config.security.JwtService;
 import lombok.AllArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;

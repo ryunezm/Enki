@@ -1,4 +1,4 @@
-package com.ryunezm.enki.config;
+package com.ryunezm.enki.config.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

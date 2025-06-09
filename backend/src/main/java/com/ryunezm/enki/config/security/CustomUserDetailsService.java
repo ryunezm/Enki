@@ -1,4 +1,4 @@
-package com.ryunezm.enki.services;
+package com.ryunezm.enki.config.security;
 
 import com.ryunezm.enki.models.AppUser;
 import com.ryunezm.enki.repositories.UserRepository;

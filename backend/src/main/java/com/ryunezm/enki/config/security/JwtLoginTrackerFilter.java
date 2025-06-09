@@ -1,6 +1,5 @@
-package com.ryunezm.enki.config;
+package com.ryunezm.enki.config.security;
 
-import com.ryunezm.enki.services.OAuth2UserSessionService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

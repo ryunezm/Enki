@@ -1,12 +1,9 @@
-package com.ryunezm.enki.config;
+package com.ryunezm.enki.config.security;
 
-import com.ryunezm.enki.services.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -25,7 +22,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import java.util.List;
 
 @Configuration
 @EnableMethodSecurity
@@ -33,7 +29,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
     private final CustomUserDetailsService customUserDetailsService;
-    private final AdminAuditService adminAuditService;
+    private final AdminJwtAuditFilter adminJwtAuditFilter;
 
     @Value("${jwt.secret.key}")
     private String jwtSecretKey;
@@ -41,7 +37,9 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                // Disable CSRF protection for stateless APIs
                 .csrf(AbstractHttpConfigurer::disable)
+                // Define authorization rules using the modern DSL
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/sensor-data").permitAll()
                         .requestMatchers("/ws/**").permitAll()
@@ -49,27 +47,32 @@ public class SecurityConfig {
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().authenticated()
                 )
+                // Configure the app as an OAuth2 Resource Server to validate JWTs
                 .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> {
-                            jwt.decoder(jwtDecoder());
-                            jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()); // Apply custom converter
-                        })
+                        .jwt(jwt -> jwt
+                                .decoder(jwtDecoder())
+                                .jwtAuthenticationConverter(jwtAuthenticationConverter()))
                 )
+                // Set session management to STATELESS as we use tokens
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterAfter(adminJwtAuditFilter(), BearerTokenAuthenticationFilter.class);
+                // Add the custom audit filter after the token has been authenticated
+                .addFilterAfter(adminJwtAuditFilter, BearerTokenAuthenticationFilter.class);
+
         return http.build();
     }
 
+    /**
+     * Defines the password encoder bean.
+     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    @Bean
-    public AuthenticationManager authenticationManager() {
-        return new ProviderManager(List.of(daoAuthenticationProvider()));
-    }
-
+    /**
+     * Configures the DaoAuthenticationProvider. This provider uses the
+     * CustomUserDetailsService and PasswordEncoder for username/password authentication.
+     */
     @Bean
     public DaoAuthenticationProvider daoAuthenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
@@ -78,6 +81,10 @@ public class SecurityConfig {
         return provider;
     }
 
+    /**
+     * Creates the JwtDecoder bean using the secret key from application properties.
+     * This bean is responsible for verifying the JWT signature.
+     */
     @Bean
     public JwtDecoder jwtDecoder() {
         byte[] decodedKey = Base64.getDecoder().decode(jwtSecretKey.getBytes(StandardCharsets.UTF_8));
@@ -85,21 +92,21 @@ public class SecurityConfig {
         return NimbusJwtDecoder.withSecretKey(secretKey).build();
     }
 
-    // Custom JWT converter to extract authorities and record OAuth2 sessions
+    /**
+     * Customizes JWT authentication by extracting roles from a "roles" claim
+     * instead of the default "scope" or "scp" claims.
+     */
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
+        // Look for authorities in a "roles" claim in the JWT
         grantedAuthoritiesConverter.setAuthoritiesClaimName("roles");
+        // Remove the default "SCOPE_" prefix from granted authorities
         grantedAuthoritiesConverter.setAuthorityPrefix("");
 
         JwtAuthenticationConverter jwtConverter = new JwtAuthenticationConverter();
         jwtConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
 
         return jwtConverter;
-    }
-
-    @Bean
-    public AdminJwtAuditFilter adminJwtAuditFilter() {
-        return new AdminJwtAuditFilter(adminAuditService);
     }
 }

@@ -1,4 +1,4 @@
-package com.ryunezm.enki.services;
+package com.ryunezm.enki.config.security;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
